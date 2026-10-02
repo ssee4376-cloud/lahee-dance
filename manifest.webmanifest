@@ -1,0 +1,16 @@
+{
+  "name": "유라희의 한국무용 연대기",
+  "short_name": "라희 무용",
+  "description": "라희의 한국무용 상장, 공연 사진, 레슨과 대회 일정을 가족이 함께 보는 기록장",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F3F7",
+  "theme_color": "#A3264F",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
