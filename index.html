@@ -853,11 +853,16 @@ function openLogin(){
     <p class="muted">가족 비밀번호를 넣으면 기록과 사진, 일정을 추가하고 고칠 수 있어요. 한 번 로그인하면 이 기기에서는 계속 유지돼요.</p>
     <div class="field"><label for="l-pw">가족 비밀번호</label><input type="password" id="l-pw" autocomplete="current-password" style="border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:9px 11px;width:100%"></div>
     <p class="err" id="lErr" hidden></p>
+    <p class="muted small" style="margin:0">비밀번호를 잊으셨으면 <button type="button" class="edit-link" id="lForgot">재설정 메일 받기</button></p>
     <div class="actions"><button type="button" class="btn" id="lCancel">취소</button><button class="btn primary" id="lGo">로그인</button></div>
   </form></div>`;
   $("#modal").hidden = false;
   $("#l-pw").focus();
   $("#lCancel").onclick = closeModal;
+  $("#lForgot").onclick = async () => {
+    const { error } = await sb.auth.resetPasswordForEmail(CFG.EDITOR_EMAIL, { redirectTo: location.origin + location.pathname });
+    const el=$("#lErr"); el.textContent = error ? "메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요." : "가족 대표 메일로 재설정 링크를 보냈어요."; el.hidden=false;
+  };
   $("#lform").addEventListener("submit", async ev => {
     ev.preventDefault();
     const btn = $("#lGo"); btn.disabled = true;
@@ -865,6 +870,31 @@ function openLogin(){
     btn.disabled = false;
     if (error){ const el=$("#lErr"); el.textContent = /invalid/i.test(error.message) ? "비밀번호가 맞지 않아요." : "로그인하지 못했어요. 잠시 후 다시 시도해 주세요."; el.hidden=false; return; }
     closeModal(); setEditor(true); toast("편집할 수 있어요");
+  });
+}
+
+function openSetPassword(){
+  $("#modal").innerHTML = `<div class="scrim"><form class="sheet" id="pwform" novalidate>
+    <h2>가족 비밀번호 정하기</h2>
+    <p class="muted">가족이 기록을 추가할 때 쓸 비밀번호예요. 6자 이상으로 정해 주세요.</p>
+    <div class="field"><label for="pw1">새 비밀번호</label><input type="password" id="pw1" autocomplete="new-password" style="border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:9px 11px;width:100%"></div>
+    <div class="field"><label for="pw2">한 번 더 입력</label><input type="password" id="pw2" autocomplete="new-password" style="border:1px solid var(--line);background:var(--ground);border-radius:8px;padding:9px 11px;width:100%"></div>
+    <p class="err" id="pwErr" hidden></p>
+    <div class="actions"><button class="btn primary" id="pwGo">비밀번호 저장</button></div>
+  </form></div>`;
+  $("#modal").hidden = false;
+  $("#pw1").focus();
+  $("#pwform").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const a=$("#pw1").value, b=$("#pw2").value, el=$("#pwErr");
+    if (a.length < 6){ el.textContent="6자 이상으로 정해 주세요."; el.hidden=false; return; }
+    if (a !== b){ el.textContent="두 비밀번호가 달라요."; el.hidden=false; return; }
+    $("#pwGo").disabled = true;
+    const { error } = await sb.auth.updateUser({ password: a });
+    $("#pwGo").disabled = false;
+    if (error){ el.textContent="저장하지 못했어요. 메일의 링크를 다시 눌러 주세요."; el.hidden=false; return; }
+    history.replaceState(null, "", location.pathname);
+    closeModal(); setEditor(true); toast("비밀번호를 정했어요. 이제 기록을 추가할 수 있어요");
   });
 }
 
@@ -909,9 +939,14 @@ render();
   if (!sb){ $("#loginBtn").hidden = true; $("#stats").innerHTML=""; $("#notice").innerHTML=`<div class="notice">config.js에 Supabase 주소와 키를 넣어야 기록이 보여요.</div>`; return; }
   try { await loadAll(); }
   catch(e){ $("#notice").innerHTML=`<div class="notice">기록을 불러오지 못했어요. 잠시 후 새로 고쳐 주세요. (서버가 잠들어 있으면 1~2분 걸릴 수 있어요)</div>`; }
+  const linkType = new URLSearchParams(location.hash.slice(1)).get("type");
   const { data } = await sb.auth.getSession();
   setEditor(!!data?.session);
-  sb.auth.onAuthStateChange((_ev, session) => { if (!!session !== state.editor) setEditor(!!session); });
+  sb.auth.onAuthStateChange((ev, session) => {
+    if (!!session !== state.editor) setEditor(!!session);
+    if (ev === "PASSWORD_RECOVERY") openSetPassword();
+  });
+  if (data?.session && (linkType === "invite" || linkType === "recovery")) openSetPassword();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAll().catch(()=>{}); });
 })();
 })();

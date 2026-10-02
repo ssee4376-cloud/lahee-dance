@@ -1,5 +1,5 @@
 // 앱 화면(파일)만 저장해 두고, 기록과 사진은 항상 서버에서 새로 받아옵니다.
-const CACHE = "lahee-shell-v1";
+const CACHE = "lahee-shell-v2";
 const SHELL = ["./", "./index.html", "./config.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
